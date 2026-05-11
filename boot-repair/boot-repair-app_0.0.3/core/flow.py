@@ -119,7 +119,7 @@ class BootRepairFlow:
         return evidence
 
     def analyze(self) -> AnalysisEvidence:
-        if self.state.stage != FlowStage.ANALYZE:
+        if self.state.stage not in {FlowStage.DETECT, FlowStage.ANALYZE}:
             raise FlowStateError('analyze requires detected evidence')
         if self.state.evidence is None:
             raise FlowStateError('no evidence available for analysis')

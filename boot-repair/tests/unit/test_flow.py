@@ -155,6 +155,17 @@ class TestFlow(unittest.TestCase):
         report = flow.execute()
         self.assertTrue(report.success)
 
+    def test_analyze_accepts_preloaded_evidence(self) -> None:
+        flow = BootRepairFlow(
+            detector=_fake_detector,
+            planner=_fake_planner,
+            executor=lambda plan: ExecutionReport(success=True, applied_actions=tuple()),
+        )
+        flow.state.evidence = _fake_detector()
+
+        analysis = flow.analyze()
+        self.assertEqual(analysis.firmware_mode, 'uefi')
+
     def test_validate_rejects_root_partition_not_in_analysis(self) -> None:
         flow = BootRepairFlow(
             selection=RepairSelection(

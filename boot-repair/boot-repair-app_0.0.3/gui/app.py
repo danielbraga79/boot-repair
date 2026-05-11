@@ -8,7 +8,7 @@ import customtkinter as ctk
 
 from core.analysis import AnalysisEvidence, collect_optional_diagnostics
 from core.execution import ExecutionReport
-from core.flow import BootRepairFlow, RepairSelection
+from core.flow import BootRepairFlow, FlowStage, RepairSelection
 from core.models import OperationMode, RepairAction, RepairPlan, format_size_bytes
 from gui.screens import PlanViewModel, build_screens
 from i18n import TranslationManager
@@ -189,6 +189,18 @@ class BootRepairApp:
     def _show_selection(self) -> None:
         self._show(self.screens.selection)
 
+    def _ensure_flow_ready_for_analysis(self) -> None:
+        if self.evidence is None:
+            return
+
+        if self.flow.state.stage not in {FlowStage.DETECT, FlowStage.ANALYZE}:
+            self.flow = BootRepairFlow(detector=lambda: self.evidence)
+            self.flow.state.evidence = self.evidence
+            self.flow.state.advance(FlowStage.ANALYZE, 'detect')
+        elif self.flow.state.stage == FlowStage.DETECT and self.flow.state.evidence is None:
+            self.flow.state.evidence = self.evidence
+            self.flow.state.advance(FlowStage.ANALYZE, 'detect')
+
     def _run_advanced_diagnostics(self, evidence: AnalysisEvidence) -> AnalysisEvidence:
         if self._advanced_diagnostics_started:
             return evidence
@@ -266,6 +278,8 @@ class BootRepairApp:
             logger.error(error_msg)
             self.screens.selection.set_status(error_msg)
             return
+
+        self._ensure_flow_ready_for_analysis()
 
         if self.screens.selection.selected_mode() == 'advanced':
             self.screens.selection.set_status('Running advanced diagnostics before analysis...')
