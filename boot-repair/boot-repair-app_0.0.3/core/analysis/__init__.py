@@ -6,9 +6,12 @@ from core.models import AnalysisEvidence
 from .evidence_builder import _parse_mounts, collect_evidence as _collect_evidence
 from .diagnostics import collect_optional_diagnostics, _detect_boot_partition_issues, _detect_fstab_issues
 from .detector import _detect_lsblk_columns
+from core.system import capture
 
 
-def collect_evidence(*, fstab_path=None, lsblk_command=None, blkid_command=('blkid', '-o', 'export'), command_runner=None, run_optional_diagnostics=False):
+def collect_evidence(*, fstab_path=None, lsblk_command=None, blkid_command=('blkid', '-o', 'export'), command_runner=capture, run_optional_diagnostics=False):
+    if command_runner is None:
+        command_runner = capture
     return _collect_evidence(
         fstab_path=fstab_path,
         lsblk_command=lsblk_command,
