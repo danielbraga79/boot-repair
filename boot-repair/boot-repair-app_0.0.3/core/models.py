@@ -18,6 +18,11 @@ class DistributionFamily(str, Enum):
     UNKNOWN = 'unknown'
 
 
+class OperationMode(str, Enum):
+    SAFE = 'safe'
+    ADVANCED = 'advanced'
+
+
 class DiagnosticCategory(str, Enum):
     BOOTLOADER_FAILURE = 'BOOTLOADER_FAILURE'
     EFI_MISSING = 'EFI_MISSING'
@@ -83,6 +88,7 @@ class RepairSelection:
     root_partition: str = ''
     efi_system_partition: str = ''
     firmware_mode: str = ''
+    operation_mode: OperationMode = OperationMode.SAFE
     confirmed: bool = False
     notes: tuple[str, ...] = ()
 
@@ -99,6 +105,7 @@ class RepairContext:
     root_partition: str = ''
     root_disk_name: str = ''
     efi_system_partition: str = ''
+    operation_mode: OperationMode = OperationMode.SAFE
     confirmed: bool = False
     distribution_family: DistributionFamily = DistributionFamily.UNKNOWN
     diagnostic_findings: tuple[DiagnosticFinding, ...] = ()
@@ -122,6 +129,7 @@ class Risk:
     description: str
     level: RiskLevel
     mitigation: str = ''
+    params: dict[str, str] | None = None
 
 
 @dataclass(frozen=True, slots=True)

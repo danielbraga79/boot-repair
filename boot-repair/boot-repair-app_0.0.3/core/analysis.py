@@ -1,64 +1,26 @@
 from __future__ import annotations
 
-import importlib
-from pathlib import Path
-from typing import Any, Callable, Sequence
-import json
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
 
-from core.models import AnalysisEvidence, DiagnosticCategory, DiagnosticFinding, Disk, Partition, RiskLevel
-from core.privileged import sudo_command
-from core.system import (
-    CommandError,
-    CommandNotFoundError,
-    CommandTimeoutError,
-    capture,
-    detect_distribution,
-    detect_distribution_family,
-    detect_initramfs_tool,
-    read_os_release,
-    suggest_install_command,
-)
+from .analysis.evidence_builder import collect_evidence
 
 
-def _device_name(name: str) -> str:
-    value = str(name).strip()
-    return value if value.startswith('/dev/') else f'/dev/{value}'
+def analyze_system(**kwargs: Any) -> Any:
+    return collect_evidence(**kwargs)from __future__ import annotations
+
+from typing import Any
+import logging
+
+logger = logging.getLogger(__name__)
+
+from .analysis.evidence_builder import collect_evidence
 
 
-def _to_int(value: Any, default: int = 0) -> int:
-    if isinstance(value, str):
-        # Handle comma decimal separator (e.g., "223,6G")
-        value = value.replace(',', '.')
-        # Remove size suffixes and convert to bytes
-        value = value.upper()
-        if value.endswith('G'):
-            try:
-                return int(float(value[:-1]) * 1_000_000_000)
-            except ValueError:
-                return default
-        elif value.endswith('M'):
-            try:
-                return int(float(value[:-1]) * 1_000_000)
-            except ValueError:
-                return default
-        elif value.endswith('K'):
-            try:
-                return int(float(value[:-1]) * 1_000)
-            except ValueError:
-                return default
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return default
-
-
-def _to_bool(value: Any) -> bool:
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
+def analyze_system(**kwargs: Any) -> Any:
+    return collect_evidence(**kwargs)
         return bool(value)
     if isinstance(value, str):
         return value.strip().lower() in {'1', 'true', 'yes', 'y', 'on'}

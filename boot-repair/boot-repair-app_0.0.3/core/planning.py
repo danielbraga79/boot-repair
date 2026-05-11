@@ -19,7 +19,7 @@ def _mount_actions(context: RepairContext) -> tuple[RepairAction, ...]:
             'mount-root',
             ('mount', context.root_partition, '/mnt'),
             True,
-            'Mount the selected root filesystem',
+            'action.mount_root.description',
         ),
     ]
     if context.firmware_mode.lower() == 'uefi':
@@ -31,7 +31,7 @@ def _mount_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                 'mount-efi',
                 ('mkdir', '-p', efi_target),
                 True,
-                f'Ensure EFI mount path exists at {efi_target}',
+                'action.ensure_efi_path.description',
             )
         )
         actions.append(
@@ -39,14 +39,14 @@ def _mount_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                 'mount-efi-partition',
                 ('mount', context.efi_system_partition, efi_target),
                 True,
-                'Mount the EFI System Partition for repair',
+                'action.mount_efi_partition.description',
             )
         )
     actions.extend(
         (
-            RepairAction('bind-dev', ('mount', '--bind', '/dev', '/mnt/dev'), True, 'Expose /dev in the repair environment'),
-            RepairAction('bind-proc', ('mount', '--bind', '/proc', '/mnt/proc'), True, 'Expose /proc in the repair environment'),
-            RepairAction('bind-sys', ('mount', '--bind', '/sys', '/mnt/sys'), True, 'Expose /sys in the repair environment'),
+            RepairAction('bind-dev', ('mount', '--bind', '/dev', '/mnt/dev'), True, 'action.bind_dev.description'),
+            RepairAction('bind-proc', ('mount', '--bind', '/proc', '/mnt/proc'), True, 'action.bind_proc.description'),
+            RepairAction('bind-sys', ('mount', '--bind', '/sys', '/mnt/sys'), True, 'action.bind_sys.description'),
         )
     )
     return tuple(actions)
@@ -159,7 +159,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                             'inspect-ext4',
                             ('fsck.ext4', '-n', root_partition),
                             True,
-                            'Inspect the ext filesystem for inconsistencies before attempting repair',
+                            'action.inspect_ext4.description',
                         )
                     )
                     continue
@@ -169,7 +169,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                             'inspect-xfs',
                             ('xfs_repair', '-n', root_partition),
                             True,
-                            'Inspect the XFS filesystem non-destructively before repair',
+                            'action.inspect_xfs.description',
                         )
                     )
                     continue
@@ -179,7 +179,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                             'inspect-btrfs',
                             ('btrfs', 'check', '--readonly', root_partition),
                             True,
-                            'Inspect the Btrfs filesystem in read-only mode to collect evidence before repair',
+                            'action.inspect_btrfs.description',
                         )
                     )
                     continue
@@ -188,7 +188,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'inspect-filesystem',
                     ('echo', 'Review filesystem health and run the correct read-only inspection command before repair'),
                     False,
-                    'Provide a safe diagnostic step for filesystem corruption findings',
+                    'action.inspect_filesystem.description',
                 )
             )
         if finding.category == DiagnosticCategory.PARTITION_TABLE_DAMAGE:
@@ -197,7 +197,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'inspect-partition-table',
                     ('parted', '-m', context.root_disk_name or root_partition, 'print'),
                     True,
-                    'Review partition table metadata and backup GPT headers in a non-destructive way',
+                    'action.inspect_partition_table.description',
                 )
             )
         if finding.category == DiagnosticCategory.BTRFS_LAYOUT_ERROR:
@@ -206,7 +206,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'verify-btrfs-subvolume',
                     ('echo', 'Inspect Btrfs subvolume layout in /etc/fstab and target mount options before repair'),
                     False,
-                    'Guide the user to confirm Btrfs subvolume configuration before repairing boot',
+                    'action.verify_btrfs_subvolume.description',
                 )
             )
         if finding.category == DiagnosticCategory.BOOT_PARTITION_FORMATTED:
@@ -215,7 +215,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'recreate-boot-structure',
                     ('echo', 'Recreate EFI directory structure and reinstall bootloader files'),
                     False,
-                    'Plan to recreate missing boot/EFI structure without automatic execution',
+                    'action.recreate_boot_structure.description',
                 )
             )
             actions.append(
@@ -223,7 +223,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'reinstall-bootloader',
                     ('echo', 'Reinstall GRUB, systemd-boot, or other bootloader as appropriate'),
                     False,
-                    'Plan bootloader reinstallation for formatted boot partition',
+                    'action.reinstall_bootloader.description',
                 )
             )
             actions.append(
@@ -231,7 +231,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'regenerate-initramfs-boot',
                     ('echo', 'Regenerate initramfs using detected tool (mkinitcpio, dracut, update-initramfs)'),
                     False,
-                    'Plan initramfs regeneration for boot partition recovery',
+                    'action.regenerate_initramfs_boot.description',
                 )
             )
             actions.append(
@@ -239,7 +239,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'recreate-uefi-entries',
                     ('echo', 'Recreate UEFI boot entries if necessary'),
                     False,
-                    'Plan UEFI boot entry recreation',
+                    'action.recreate_uefi_entries.description',
                 )
             )
         if finding.category == DiagnosticCategory.FSTAB_MISSING:
@@ -248,7 +248,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'reconstruct-fstab',
                     ('echo', 'Reconstruct /etc/fstab based on detected partitions, UUIDs, and mount points'),
                     False,
-                    'Plan fstab reconstruction with validation steps',
+                    'action.reconstruct_fstab.description',
                 )
             )
             actions.append(
@@ -256,7 +256,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'validate-uuids',
                     ('echo', 'Validate that detected UUIDs match current partition UUIDs'),
                     False,
-                    'Ensure UUID consistency before writing fstab',
+                    'action.validate_uuids.description',
                 )
             )
             actions.append(
@@ -264,7 +264,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'review-mountpoints',
                     ('echo', 'Review and confirm mount points for root, boot, efi, swap, and subvolumes'),
                     False,
-                    'Manual review of mount point configuration',
+                    'action.review_mountpoints.description',
                 )
             )
             actions.append(
@@ -272,7 +272,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'write-fstab',
                     ('echo', 'Write the reconstructed fstab file (requires manual confirmation)'),
                     False,
-                    'Final step to write fstab after validation',
+                    'action.write_fstab.description',
                 )
             )
             actions.append(
@@ -280,7 +280,7 @@ def _diagnostic_actions(context: RepairContext) -> tuple[RepairAction, ...]:
                     'validate-fstab-syntax',
                     ('echo', 'Validate fstab syntax and mount compatibility'),
                     False,
-                    'Syntax and logical validation of fstab',
+                    'action.validate_fstab_syntax.description',
                 )
             )
     return tuple(actions)
@@ -292,19 +292,19 @@ def _repair_actions(context: RepairContext) -> tuple[RepairAction, ...]:
             'install-bootloader',
             _bootloader_install_command(context),
             True,
-            'Install or repair the bootloader inside the chrooted environment',
+            'action.install_bootloader.description',
         ),
         RepairAction(
             'regenerate-boot-config',
             _boot_config_command(context),
             True,
-            'Regenerate the bootloader configuration inside the chrooted environment',
+            'action.regenerate_boot_config.description',
         ),
         RepairAction(
             'regenerate-initramfs',
             _initramfs_command(context),
             True,
-            'Regenerate the initramfs if a supported tool is available in the target environment',
+            'action.regenerate_initramfs.description',
         ),
     ]
     diagnostic_plan = _diagnostic_actions(context)
@@ -315,37 +315,37 @@ def _repair_actions(context: RepairContext) -> tuple[RepairAction, ...]:
 
 def _rollback_actions(context: RepairContext) -> tuple[RepairAction, ...]:
     actions = [
-        RepairAction('unmount-sys', ('umount', '/mnt/sys'), True, 'Unmount /mnt/sys'),
-        RepairAction('unmount-proc', ('umount', '/mnt/proc'), True, 'Unmount /mnt/proc'),
-        RepairAction('unmount-dev', ('umount', '/mnt/dev'), True, 'Unmount /mnt/dev'),
+        RepairAction('unmount-sys', ('umount', '/mnt/sys'), True, 'action.unmount_sys.description'),
+        RepairAction('unmount-proc', ('umount', '/mnt/proc'), True, 'action.unmount_proc.description'),
+        RepairAction('unmount-dev', ('umount', '/mnt/dev'), True, 'action.unmount_dev.description'),
     ]
     if context.firmware_mode.lower() == 'uefi':
-        actions.append(RepairAction('unmount-efi', ('umount', _efi_mount_target(context)), True, 'Unmount the EFI System Partition'))
-    actions.append(RepairAction('unmount-root', ('umount', '/mnt'), True, 'Unmount the root filesystem'))
+        actions.append(RepairAction('unmount-efi', ('umount', _efi_mount_target(context)), True, 'action.unmount_efi.description'))
+    actions.append(RepairAction('unmount-root', ('umount', '/mnt'), True, 'action.unmount_root.description'))
     return tuple(actions)
 
 
 def _risks(context: RepairContext) -> tuple[Risk, ...]:
     risks = [
-        Risk('Wrong target device can make the system unbootable', RiskLevel.CRITICAL, 'Confirm the selected root partition before execution'),
-        Risk('Filesystem mounts can fail if the target is already mounted', RiskLevel.HIGH, 'Review mount points in the analysis stage before planning'),
+        Risk('risk.wrong_target.description', RiskLevel.CRITICAL, 'risk.wrong_target.mitigation'),
+        Risk('risk.mount_failure.description', RiskLevel.HIGH, 'risk.mount_failure.mitigation'),
     ]
     if context.firmware_mode.lower() == 'uefi':
-        risks.append(Risk('UEFI repair requires a valid EFI System Partition', RiskLevel.HIGH, 'Verify that the EFI partition is selected and belongs to a valid ESP target'))
+        risks.append(Risk('risk.uefi_requires_esp.description', RiskLevel.HIGH, 'risk.uefi_requires_esp.mitigation'))
     if context.efi_system_partition and context.root_disk_name and context.efi_system_partition.startswith('/dev/'):
         efi_partition = next((partition for partition in context.partitions if partition.name == context.efi_system_partition), None)
         if efi_partition is not None and efi_partition.disk_name != context.root_disk_name:
-            risks.append(Risk('EFI and root partitions are on different disks', RiskLevel.MEDIUM, 'Confirm cross-disk UEFI boot topology before proceeding'))
+            risks.append(Risk('risk.cross_disk_uefi.description', RiskLevel.MEDIUM, 'risk.cross_disk_uefi.mitigation'))
     if not context.live_environment:
-        risks.append(Risk('Repairs outside a live environment are less reliable', RiskLevel.MEDIUM, 'Prefer a live boot environment for the operation'))
+        risks.append(Risk('risk.not_live_environment.description', RiskLevel.MEDIUM, 'risk.not_live_environment.mitigation'))
     if context.distribution != 'unknown':
-        risks.append(Risk(f'Detected distribution: {context.distribution}', RiskLevel.LOW, 'Use distribution-specific tools when available.'))
+        risks.append(Risk('risk.detected_distribution.description', RiskLevel.LOW, 'risk.detected_distribution.mitigation', {'distribution': context.distribution}))
     if context.initramfs_tool != 'unknown':
-        risks.append(Risk(f'Detected initramfs tool: {context.initramfs_tool}', RiskLevel.LOW, 'The repair plan includes regeneration if the tool exists in the target environment.'))
+        risks.append(Risk('risk.detected_initramfs_tool.description', RiskLevel.LOW, 'risk.detected_initramfs_tool.mitigation', {'initramfs_tool': context.initramfs_tool}))
     if context.distribution_family == DistributionFamily.ARCH:
-        risks.append(Risk('Detected Arch-family distribution', RiskLevel.LOW, 'Arch and Arch-based systems may use mkinitcpio, bootctl, or grub-mkconfig.'))
+        risks.append(Risk('risk.arch_family.description', RiskLevel.LOW, 'risk.arch_family.mitigation'))
     elif context.distribution_family == DistributionFamily.DEBIAN:
-        risks.append(Risk('Detected Debian-family distribution', RiskLevel.LOW, 'Debian-family systems may use update-initramfs and update-grub.'))
+        risks.append(Risk('risk.debian_family.description', RiskLevel.LOW, 'risk.debian_family.mitigation'))
     return tuple(risks)
 
 
@@ -363,30 +363,30 @@ def build_repair_plan(context: RepairContext) -> RepairPlan:
     confidence = max(0.10, min(0.99, confidence))
 
     preconditions = [
-        'User confirmed the target partition.',
-        'The selected root partition appears in the analysis results.',
-        'The selected repair target is consistent with the detected firmware mode.',
+        'precondition.user_confirmed',
+        'precondition.root_in_analysis',
+        'precondition.consistent_firmware',
     ]
     if context.live_environment:
-        preconditions.append('The system is running in a live recovery environment.')
+        preconditions.append('precondition.live_environment')
     else:
-        preconditions.append('A live recovery environment is recommended before execution.')
+        preconditions.append('precondition.live_recommended')
     if context.firmware_mode.lower() == 'uefi':
-        preconditions.append('The EFI System Partition is available and mounted or accessible for repair.')
+        preconditions.append('precondition.efi_available')
     if any(finding.category == DiagnosticCategory.FS_CORRUPTION for finding in context.diagnostic_findings):
-        preconditions.append('Filesystem diagnostics have been collected and reviewed before applying bootloader repair.')
+        preconditions.append('precondition.fs_diagnostics_reviewed')
     if any(finding.category == DiagnosticCategory.PARTITION_TABLE_DAMAGE for finding in context.diagnostic_findings):
-        preconditions.append('Partition table inconsistencies are present; confirm repair targets and backup metadata before execution.')
+        preconditions.append('precondition.partition_table_confirmed')
     if any(finding.category == DiagnosticCategory.BTRFS_LAYOUT_ERROR for finding in context.diagnostic_findings):
-        preconditions.append('Btrfs subvolume layout was detected; verify /etc/fstab and mount options prior to repair.')
+        preconditions.append('precondition.btrfs_layout_verified')
 
     return RepairPlan(
-        title='Boot repair plan',
+        title='plan.title',
         actions=_mount_actions(context) + _repair_actions(context),
         justifications=(
-            'The plan only mounts the selected target after explicit confirmation.',
-            'Bootloader repair is executed inside a chroot with explicit commands.',
-            'Initramfs regeneration is included when available to maintain boot consistency.',
+            'justification.mount_confirmation',
+            'justification.chroot_bootloader',
+            'justification.initramfs_regeneration',
         ),
         risks=_risks(context),
         preconditions=tuple(preconditions),

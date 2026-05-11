@@ -263,8 +263,8 @@ exit 1
             result = self.run_script(script_link, temp_path, env, ["arch"])
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
             self.assertFalse((temp_path / ".venv").exists())
-            self.assertIn("Installing native package", result.stdout)
-            self.assertIn("All Python dependencies are available", result.stdout)
+            self.assertIn("Installing python-customtkinter", result.stdout)
+            self.assertIn("All Python modules available in system python3", result.stdout)
 
     def test_install_deps_reuses_existing_venv(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

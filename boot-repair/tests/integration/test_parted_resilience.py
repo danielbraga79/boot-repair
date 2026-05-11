@@ -8,7 +8,10 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 import json
 
-sys.path.insert(0, str(Path(__file__).parent / 'boot-repair-app_0.0.3'))
+ROOT_DIR = Path(__file__).resolve().parents[2]
+CORE_APP_PATH = ROOT_DIR / 'boot-repair-app_0.0.3'
+if str(CORE_APP_PATH) not in sys.path:
+    sys.path.insert(0, str(CORE_APP_PATH))
 
 from core.analysis import collect_evidence, collect_optional_diagnostics
 from core.system import CommandTimeoutError

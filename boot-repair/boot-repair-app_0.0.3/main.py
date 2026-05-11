@@ -6,7 +6,7 @@ import os
 import sys
 
 from core.analysis import collect_evidence
-from core.models import format_size_bytes
+from core.models import OperationMode, format_size_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +58,15 @@ def _validate_launcher_environment() -> None:
         raise SystemExit('Boot Repair must be launched as a normal user, not root.')
 
 
-def run_cli() -> int:
-    evidence = collect_evidence()
+def run_cli(mode: OperationMode = OperationMode.SAFE) -> int:
+    evidence = collect_evidence(run_optional_diagnostics=(mode == OperationMode.ADVANCED))
+    print(f'Operation mode: {mode.value}')
     for line in _format_evidence(evidence):
         print(line)
     return 0
 
 
-def run_gui() -> int:
+def run_gui(mode: OperationMode = OperationMode.SAFE) -> int:
     try:
         from gui.app import main as run_gui_main
     except ImportError as exc:

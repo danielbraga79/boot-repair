@@ -35,10 +35,11 @@ class HelpScreen(BaseScreen):
 
         sections = [
             ('help.section.what', 'help.section.what.text'),
+            ('help.section.sudo', 'help.section.sudo.text'),
             ('help.section.start', 'help.section.start.text'),
             ('help.section.choose', 'help.section.choose.text'),
-            ('help.section.sudo', 'help.section.sudo.text'),
             ('help.section.read', 'help.section.read.text'),
+            ('help.section.assisted', 'help.section.assisted.text'),
         ]
 
         row = 0
@@ -98,10 +99,11 @@ class HelpScreen(BaseScreen):
         ]
         section_text_keys = [
             'help.section.what.text',
+            'help.section.sudo.text',
             'help.section.start.text',
             'help.section.choose.text',
-            'help.section.sudo.text',
             'help.section.read.text',
+            'help.section.assisted.text',
         ]
         for label, key in zip(self._section_labels, section_keys):
             label.configure(text=self.translator.translate(key))

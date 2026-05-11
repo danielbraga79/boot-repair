@@ -4,7 +4,10 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT_DIR = Path(__file__).resolve().parents[2]
+CORE_APP_PATH = ROOT_DIR / 'boot-repair-app_0.0.3'
+if str(CORE_APP_PATH) not in sys.path:
+    sys.path.insert(0, str(CORE_APP_PATH))
 
 from i18n import DEFAULT_LOCALE, TranslationManager
 

@@ -111,6 +111,12 @@ class TestFlow(unittest.TestCase):
         self._import_patch = patch('core.analysis.importlib.import_module', side_effect=patched_import_module)
         self._import_patch.start()
 
+        # Clear evidence cache
+        from pathlib import Path
+        cache_file = Path('/tmp/boot-repair-evidence-cache.json')
+        if cache_file.exists():
+            cache_file.unlink()
+
     def tearDown(self) -> None:
         self._import_patch.stop()
 

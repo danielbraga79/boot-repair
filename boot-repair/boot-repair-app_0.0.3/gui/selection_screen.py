@@ -76,6 +76,22 @@ class SelectionScreen(BaseScreen):
         )
         self.efi_combo.grid(row=1, column=1, sticky='ew', pady=4, padx=(0, 20))
 
+        self.mode_label = ctk.CTkLabel(
+            selector_frame,
+            text=self.translator.translate('selection.mode_label'),
+            font=ctk.CTkFont(weight='bold'),
+        )
+        self.mode_label.grid(row=2, column=0, sticky='w', padx=(0, 8), pady=4)
+
+        self.mode_var = ctk.StringVar(value='safe')
+        self.mode_selector = ctk.CTkSegmentedButton(
+            selector_frame,
+            values=['safe', 'advanced'],
+            variable=self.mode_var,
+            command=self._dispatch_mode_selected,
+        )
+        self.mode_selector.grid(row=2, column=1, sticky='ew', pady=4, padx=(0, 20))
+
         lists_frame = ctk.CTkFrame(self.content, fg_color='transparent')
         lists_frame.grid(row=2, column=0, sticky='ew', pady=(10, 20))
         lists_frame.columnconfigure(0, weight=1)
@@ -136,6 +152,12 @@ class SelectionScreen(BaseScreen):
         if self._on_efi_selected is not None:
             self._on_efi_selected(value)
 
+    def _dispatch_mode_selected(self, value: str) -> None:
+        self.mode_var.set(value)
+
+    def selected_mode(self) -> str:
+        return self.mode_var.get()
+
     def set_catalog(self, *, disks: Sequence[Disk], partitions: Sequence[Partition]) -> None:
         partition_disk_map = {partition.name: partition.disk_name for partition in partitions}
         self._partition_disk_map = dict(partition_disk_map)
@@ -180,6 +202,7 @@ class SelectionScreen(BaseScreen):
         super().update_translations()
         self.root_label.configure(text=self.translator.translate('selection.root_label'))
         self.efi_label.configure(text=self.translator.translate('selection.efi_label'))
+        self.mode_label.configure(text=self.translator.translate('selection.mode_label'))
         self.disks_heading_label.configure(text=self.translator.translate('selection.disks_heading'))
         self.partitions_heading_label.configure(text=self.translator.translate('selection.partitions_heading'))
         self.set_status(self.translator.translate('selection.status_ready'))

@@ -9,7 +9,7 @@ import customtkinter as ctk
 from core.analysis import AnalysisEvidence, collect_optional_diagnostics
 from core.execution import ExecutionReport
 from core.flow import BootRepairFlow, RepairSelection
-from core.models import RepairPlan, format_size_bytes
+from core.models import RepairAction, RepairPlan, format_size_bytes
 from gui.screens import PlanViewModel, build_screens
 from i18n import TranslationManager
 
@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class AppState:
     root_partition: str = ''
     efi_partition: str = ''
+    operation_mode: OperationMode = OperationMode.SAFE
 
 
 class BootRepairApp:
@@ -44,7 +45,7 @@ class BootRepairApp:
         self.state = AppState()
         self.evidence: AnalysisEvidence | None = None
         self._initialization_failed = False
-        self._optional_diagnostics_thread_started = False
+        self._advanced_diagnostics_started = False
 
         self.screens = build_screens(
             self.container,
@@ -139,8 +140,6 @@ class BootRepairApp:
                 f'SelectionScreen populated with {len(evidence.disks)} disks and {len(evidence.partitions)} partitions'
             )
             self.screens.selection.set_status(self.translator.translate('selection.status_loaded'))
-            if not self._optional_diagnostics_thread_started:
-                self._start_optional_diagnostics(evidence)
         except Exception as exc:
             self._initialization_failed = True
             error_msg = self.translator.translate('errors.analysis_failed', error=str(exc))
@@ -181,46 +180,35 @@ class BootRepairApp:
     def _show_selection(self) -> None:
         self._show(self.screens.selection)
 
-    def _start_optional_diagnostics(self, evidence: AnalysisEvidence) -> None:
-        self._optional_diagnostics_thread_started = True
+    def _run_advanced_diagnostics(self, evidence: AnalysisEvidence) -> AnalysisEvidence:
+        if self._advanced_diagnostics_started:
+            return evidence
+        self._advanced_diagnostics_started = True
+        logger.info('Starting advanced diagnostics')
+        try:
+            findings = collect_optional_diagnostics(
+                disks=evidence.disks,
+                partitions=evidence.partitions,
+                fstab_entries=evidence.fstab_entries,
+                firmware_mode=evidence.firmware_mode,
+                blkid_entries=evidence.blkid_entries,
+            )
+            if not findings:
+                logger.info('Advanced diagnostics completed with no additional findings')
+                return evidence
 
-        def worker() -> None:
-            logger.info('Starting background optional diagnostics')
-            try:
-                findings = collect_optional_diagnostics(
-                    disks=evidence.disks,
-                    partitions=evidence.partitions,
-                    fstab_entries=evidence.fstab_entries,
-                    firmware_mode=evidence.firmware_mode,
-                    blkid_entries=evidence.blkid_entries,
-                )
-                if not findings:
-                    logger.info('Background optional diagnostics completed with no additional findings')
-                    self._schedule_selection_status_update(
-                        'Advanced diagnostics available but no issues found.'
-                    )
-                    return
-
-                logger.info(f'Background optional diagnostics completed with {len(findings)} findings')
-                new_evidence = replace(
-                    evidence,
-                    diagnostic_findings=tuple(evidence.diagnostic_findings) + tuple(findings),
-                    notes=tuple(evidence.notes) + ('advanced diagnostics completed',),
-                )
-                self.flow.state.evidence = new_evidence
-                self.evidence = new_evidence
-                self._schedule_selection_status_update(
-                    f'Advanced diagnostics complete: {len(findings)} issue(s) found.'
-                )
-            except Exception as exc:
-                logger.warning('Background optional diagnostics failed: %s', exc, exc_info=exc)
-                self._schedule_selection_status_update(
-                    'Advanced diagnostics skipped due to environment issues.'
-                )
-
-        self._schedule_selection_status_update('Advanced diagnostics running in the background...')
-        thread = threading.Thread(target=worker, daemon=True)
-        thread.start()
+            logger.info(f'Advanced diagnostics completed with {len(findings)} findings')
+            new_evidence = replace(
+                evidence,
+                diagnostic_findings=tuple(evidence.diagnostic_findings) + tuple(findings),
+                notes=tuple(evidence.notes) + ('advanced diagnostics completed',),
+            )
+            self.flow.state.evidence = new_evidence
+            self.evidence = new_evidence
+            return new_evidence
+        except Exception as exc:
+            logger.warning('Advanced diagnostics failed: %s', exc, exc_info=exc)
+            return evidence
 
     def _schedule_selection_status_update(self, message: str) -> None:
         def update() -> None:
@@ -270,6 +258,10 @@ class BootRepairApp:
             self.screens.selection.set_status(error_msg)
             return
 
+        if self.screens.selection.selected_mode() == 'advanced':
+            self.screens.selection.set_status('Running advanced diagnostics before analysis...')
+            self.evidence = self._run_advanced_diagnostics(self.evidence)
+
         try:
             logger.info('Starting analysis phase from GUI')
             analyzed_evidence = self.flow.analyze()
@@ -298,6 +290,7 @@ class BootRepairApp:
             root_partition=self.state.root_partition,
             efi_system_partition=self.state.efi_partition,
             firmware_mode=self.evidence.firmware_mode,
+            operation_mode=OperationMode(self.screens.selection.selected_mode()),
             confirmed=True,
             notes=('selected from GUI',),
         )
@@ -414,17 +407,17 @@ class BootRepairApp:
 
     def _render_plan(self, plan: RepairPlan) -> None:
         view_model = PlanViewModel(
-            title=plan.title,
+            title=self.translator.translate('plan.title'),
             confidence=f'{plan.confidence:.0%}',
-            actions=tuple(f"{action.label}: {' '.join(action.command)}" for action in plan.actions),
-            justifications=plan.justifications,
+            actions=tuple(f"{action.label}: {self.translator.translate(action.description)}" for action in plan.actions),
+            justifications=tuple(self.translator.translate(j) for j in plan.justifications),
             risks=tuple(
-                f"{risk.level.value.upper()}: {risk.description}"
-                + (f" | {self.translator.translate('plan.risk_mitigation')}: {risk.mitigation}" if risk.mitigation else '')
+                f"{risk.level.value.upper()}: {self.translator.translate(risk.description, **(risk.params or {}))}"
+                + (f" | {self.translator.translate('plan.risk_mitigation')}: {self.translator.translate(risk.mitigation, **(risk.params or {}))}" if risk.mitigation else '')
                 for risk in plan.risks
             ),
-            preconditions=plan.preconditions,
-            rollback=tuple(f"{action.label}: {' '.join(action.command)}" for action in plan.rollback),
+            preconditions=tuple(self.translator.translate(p) for p in plan.preconditions),
+            rollback=tuple(f"{action.label}: {self.translator.translate(action.description)}" for action in plan.rollback),
         )
         self.screens.plan.set_plan(view_model)
 

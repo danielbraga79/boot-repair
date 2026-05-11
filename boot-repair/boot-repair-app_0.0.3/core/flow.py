@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 from core.analysis import AnalysisEvidence, collect_evidence
 from core.execution import ExecutionReport, execute_repair_plan
-from core.models import DiagnosticCategory, Disk, Partition, RepairContext, RepairPlan, RepairSelection, ValidationResult
+from core.models import DiagnosticCategory, Disk, OperationMode, Partition, RepairContext, RepairPlan, RepairSelection, ValidationResult
 from core.planning import build_repair_plan, validate_plan
 
 
@@ -86,12 +86,17 @@ class BootRepairFlow:
         self,
         selection: RepairSelection | None = None,
         *,
-        detector: Callable[[], AnalysisEvidence] = collect_evidence,
+        operation_mode: OperationMode = OperationMode.SAFE,
+        detector: Callable[[], AnalysisEvidence] | None = None,
         planner: Callable[[RepairContext], RepairPlan] = build_repair_plan,
         executor: Callable[[RepairPlan], ExecutionReport] = execute_repair_plan,
     ) -> None:
         self.selection = selection or RepairSelection()
-        self._detector = detector
+        self.operation_mode = operation_mode
+        if detector is None:
+            self._detector = lambda: collect_evidence(run_optional_diagnostics=self.operation_mode == OperationMode.ADVANCED)
+        else:
+            self._detector = detector
         self._planner = planner
         self._executor = executor
         self.state = FlowState()
@@ -197,6 +202,7 @@ class BootRepairFlow:
             root_partition=root_partition,
             root_disk_name=root_disk_name,
             efi_system_partition=efi_system_partition,
+            operation_mode=selection.operation_mode,
             confirmed=selection.confirmed and not issues,
             diagnostic_findings=evidence.diagnostic_findings,
             notes=tuple(warnings + issues),

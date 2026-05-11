@@ -139,14 +139,31 @@ Usage:
 
 The core boot-repair application is written in Python for portability and maintainability:
 
-- **core/analysis.py**: Disk and partition detection, system inspection
+#### Core Modules
+- **core/analysis/**: Modular system analysis
+  - `detector.py`: Device detection using pyudev/lsblk
+  - `parser.py`: Fallback parsing from blkid/findmnt
+  - `diagnostics.py`: Boot and filesystem diagnostics
+  - `evidence_builder.py`: Evidence collection orchestration
+  - `filesystem_checks.py`: Filesystem integrity checks
+  - `partition_checks.py`: Partition table validation
+  - `firmware.py`: Firmware and environment detection
+  - `utils.py`: Common utility functions
+- **core/analysis.py**: Legacy compatibility layer
 - **core/system.py**: System command execution, privilege management
 - **core/planning.py**: Repair plan generation
 - **core/execution.py**: Repair execution (when authorized)
 - **core/models.py**: Data structures for devices, partitions, and plans
 - **core/flow.py**: Workflow orchestration
+
+#### GUI Modules
 - **gui/app.py**: Tkinter-based graphical interface
 - **gui/screens.py**: Screen definitions and navigation
+- **gui/view_models.py**: Data binding for UI components
+
+#### Internationalization
+- **locales/**: JSON files for UI translations
+- **i18n.py**: Translation management
 
 ### Shell Script Bootstrap Layer
 
