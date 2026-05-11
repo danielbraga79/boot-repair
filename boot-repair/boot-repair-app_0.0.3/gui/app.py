@@ -9,7 +9,7 @@ import customtkinter as ctk
 from core.analysis import AnalysisEvidence, collect_optional_diagnostics
 from core.execution import ExecutionReport
 from core.flow import BootRepairFlow, RepairSelection
-from core.models import RepairAction, RepairPlan, format_size_bytes
+from core.models import OperationMode, RepairAction, RepairPlan, format_size_bytes
 from gui.screens import PlanViewModel, build_screens
 from i18n import TranslationManager
 
@@ -25,17 +25,21 @@ class AppState:
 
 class BootRepairApp:
     def __init__(self, root: ctk.CTk) -> None:
+        logger.info('[STARTUP 6] BootRepairApp.__init__ start')
         ctk.set_appearance_mode('system')
         ctk.set_default_color_theme('blue')
 
         self.translator = TranslationManager()
         self.root = root
+        logger.info('[STARTUP 7] Configuring root window')
         self.root.title(self.translator.translate('app.window_title'))
         self.root.geometry('1100x750')
         self.root.minsize(1000, 700)
 
+        logger.info('[STARTUP 8] Building language selector')
         self._build_language_selector()
 
+        logger.info('[STARTUP 9] Creating container frame')
         self.container = ctk.CTkFrame(self.root, fg_color='transparent')
         self.container.pack(fill='both', expand=True)
         self.container.columnconfigure(0, weight=1)
@@ -47,6 +51,7 @@ class BootRepairApp:
         self._initialization_failed = False
         self._advanced_diagnostics_started = False
 
+        logger.info('[STARTUP 10] Building screen set')
         self.screens = build_screens(
             self.container,
             translator=self.translator,
@@ -66,10 +71,14 @@ class BootRepairApp:
             on_efi_selected=self._select_efi_partition,
         )
 
+        logger.info('[STARTUP 11] Grid-placing screens')
         for screen in self._all_screens():
             screen.grid(row=0, column=0, sticky='nsew')
 
+        logger.info('[STARTUP 12] Showing welcome screen')
         self._show(self.screens.welcome)
+
+        logger.info('[STARTUP 13] BootRepairApp.__init__ complete')
 
     def _build_language_selector(self) -> None:
         toolbar = ctk.CTkFrame(self.root, fg_color='transparent')
@@ -441,6 +450,7 @@ class BootRepairApp:
         self.screens.execution.replace_output(lines)
 
     def run(self) -> int:
+        logger.info('[STARTUP 7] Entering mainloop')
         self.root.mainloop()
         return 0
 
@@ -454,8 +464,8 @@ def _show_startup_error(message: str) -> None:
         root.withdraw()
         messagebox.showerror('Boot Repair', f'Failed to start the interface:\n{message}')
         root.destroy()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.exception('Failed to display startup error dialog')
 
 
 def main() -> int:

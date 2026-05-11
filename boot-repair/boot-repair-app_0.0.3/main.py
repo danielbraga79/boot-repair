@@ -59,6 +59,7 @@ def _validate_launcher_environment() -> None:
 
 
 def run_cli(mode: OperationMode = OperationMode.SAFE) -> int:
+    logger.info('[STARTUP 5] Running CLI fallback')
     evidence = collect_evidence(run_optional_diagnostics=(mode == OperationMode.ADVANCED))
     print(f'Operation mode: {mode.value}')
     for line in _format_evidence(evidence):
@@ -67,23 +68,32 @@ def run_cli(mode: OperationMode = OperationMode.SAFE) -> int:
 
 
 def run_gui(mode: OperationMode = OperationMode.SAFE) -> int:
+    logger.info('[STARTUP 4] Importing GUI entrypoint')
     try:
         from gui.app import main as run_gui_main
     except ImportError as exc:
+        logger.exception('GUI import failed')
         print(f'GUI unavailable, falling back to CLI: {exc}', file=sys.stderr)
         return run_cli()
 
+    logger.info('[STARTUP 5] Running GUI')
     try:
-        return run_gui_main()
+        result = run_gui_main()
+        logger.info('[STARTUP 6] GUI run completed with exit code %s', result)
+        return result
     except Exception as exc:
+        logger.exception('GUI failed to start')
         print(f'GUI failed to start, falling back to CLI: {exc}', file=sys.stderr)
         return run_cli()
 
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger.info('[STARTUP 1] Entering main')
+    logger.info('[STARTUP 2] Initializing logging and validating launcher environment')
     _validate_launcher_environment()
 
+    logger.info('[STARTUP 3] Parsing command-line arguments')
     parser = argparse.ArgumentParser(description='Boot Repair Assistant')
     parser.add_argument('--cli', action='store_true', help='Run in command-line mode instead of using the GUI')
     args = parser.parse_args()
