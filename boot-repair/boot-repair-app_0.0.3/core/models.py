@@ -79,6 +79,7 @@ class AnalysisEvidence:
     distribution_family: DistributionFamily = DistributionFamily.UNKNOWN
     live_environment: bool = False
     initramfs_tool: str = 'unknown'
+    windows_present: bool = False
     diagnostic_findings: tuple[DiagnosticFinding, ...] = ()
     notes: tuple[str, ...] = ()
 
@@ -88,6 +89,7 @@ class RepairSelection:
     root_partition: str = ''
     efi_system_partition: str = ''
     firmware_mode: str = ''
+    dual_boot_windows: bool = False
     operation_mode: OperationMode = OperationMode.SAFE
     confirmed: bool = False
     notes: tuple[str, ...] = ()
@@ -101,10 +103,12 @@ class RepairContext:
     live_environment: bool = False
     distribution: str = 'unknown'
     initramfs_tool: str = 'unknown'
+    windows_present: bool = False
     evidence: tuple[str, ...] = ()
     root_partition: str = ''
     root_disk_name: str = ''
     efi_system_partition: str = ''
+    dual_boot_windows: bool = False
     operation_mode: OperationMode = OperationMode.SAFE
     confirmed: bool = False
     distribution_family: DistributionFamily = DistributionFamily.UNKNOWN

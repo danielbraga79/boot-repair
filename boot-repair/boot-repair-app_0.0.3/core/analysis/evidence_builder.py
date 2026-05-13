@@ -74,6 +74,7 @@ def _save_cached_evidence(evidence: AnalysisEvidence) -> None:
             'initramfs_tool': evidence.initramfs_tool,
             'diagnostic_findings': [asdict(f) for f in evidence.diagnostic_findings],
             'notes': list(evidence.notes),
+            'windows_present': evidence.windows_present,
         }
         CACHE_FILE.write_text(json.dumps(data, indent=2), encoding='utf-8')
         logger.debug('Evidence cached')
@@ -193,6 +194,39 @@ def _merge_device_info(
     return tuple(disk_lookup.values()), tuple(part_lookup.values())
 
 
+def _detect_windows_evidence(
+    partitions: tuple[Partition, ...],
+    blkid_entries: tuple[str, ...],
+    mount_entries: tuple[tuple[str, str, bool], ...],
+    runner: Callable[[Sequence[str]], str],
+) -> bool:
+    """Detect evidence of Windows installation on the target system."""
+    lower_labels = {partition.label.strip().lower() for partition in partitions if partition.label}
+    if any(partition.fs_type.lower() == 'ntfs' for partition in partitions if partition.fs_type):
+        return True
+    if any('windows' in label or 'microsoft' in label for label in lower_labels):
+        return True
+    for entry in blkid_entries:
+        lower_entry = entry.lower()
+        if 'type="ntfs"' in lower_entry or 'type="fuseblk"' in lower_entry:
+            return True
+    for partition in partitions:
+        if partition.mount_point and partition.mount_point.startswith('/'):
+            try:
+                output = runner(('test', '-f', f'{partition.mount_point}/EFI/Microsoft/Boot/bootmgfw.efi'))
+                if output.strip() == '':
+                    return True
+            except Exception:
+                pass
+    try:
+        efibootmgr_output = runner(('efibootmgr', '-v'))
+        if 'windows boot manager' in efibootmgr_output.lower() or 'bootmgfw.efi' in efibootmgr_output.lower():
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def collect_evidence(
     *,
     fstab_path: Path | str = Path('/etc/fstab'),
@@ -306,6 +340,10 @@ def collect_evidence(
         notes.append('no partitions detected from any source')
         logger.warning('No partitions detected from any source')
 
+    windows_present = _detect_windows_evidence(partitions, blkid_entries, _parse_mounts(), command_runner)
+    if windows_present:
+        notes.append('Windows installation evidence detected')
+
     evidence = AnalysisEvidence(
         disks=disks,
         partitions=partitions,
@@ -316,6 +354,7 @@ def collect_evidence(
         distribution=distribution,
         distribution_family=distribution_family,
         initramfs_tool=detect_initramfs_tool(),
+        windows_present=windows_present,
         diagnostic_findings=diagnostic_findings,
         notes=tuple(notes),
     )

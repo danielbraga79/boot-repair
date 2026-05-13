@@ -13,6 +13,7 @@
   "selection.subtitle": "Sélectionnez la partition racine et, le cas échéant, la partition EFI. Le disque est affiché seulement pour le contexte.",
   "selection.root_label": "Partition racine",
   "selection.efi_label": "Partition EFI",
+  "selection.dual_boot_label": "Ce système a un dual boot avec Windows",
   "selection.disks_heading": "Disques détectés",
   "selection.partitions_heading": "Partitions détectées",
   "selection.no_items": "Aucun élément détecté.",

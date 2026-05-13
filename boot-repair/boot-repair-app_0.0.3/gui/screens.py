@@ -59,6 +59,7 @@ def build_screens(
     on_execution_abort=None,
     on_root_selected=None,
     on_efi_selected=None,
+    on_dual_boot_selected=None,
 ) -> ScreenBundle:
     welcome = WelcomeScreen(
         master,
@@ -74,6 +75,7 @@ def build_screens(
         on_continue=on_selection_continue,
         on_root_selected=on_root_selected,
         on_efi_selected=on_efi_selected,
+        on_dual_boot_selected=on_dual_boot_selected,
     )
     analysis = AnalysisScreen(master, translator=translator, on_back=on_analysis_back, on_continue=on_analysis_continue)
     plan = PlanScreen(master, translator=translator, on_back=on_plan_back, on_continue=on_plan_continue)

@@ -13,6 +13,7 @@
   "selection.subtitle": "Select the root partition and, when applicable, the EFI partition. The disk is shown only for context.",
   "selection.root_label": "Root partition",
   "selection.efi_label": "EFI partition",
+  "selection.dual_boot_label": "This system has dual boot with Windows",
   "selection.disks_heading": "Detected disks",
   "selection.partitions_heading": "Detected partitions",
   "selection.no_items": "No items detected.",

@@ -13,6 +13,7 @@
   "selection.subtitle": "Wählen Sie die Root-Partition und gegebenenfalls die EFI-Partition aus. Die Festplatte wird nur als Kontext angezeigt.",
   "selection.root_label": "Root-Partition",
   "selection.efi_label": "EFI-Partition",
+  "selection.dual_boot_label": "Dieses System hat Dual-Boot mit Windows",
   "selection.disks_heading": "Erkannte Datenträger",
   "selection.partitions_heading": "Erkannte Partitionen",
   "selection.no_items": "Keine Elemente erkannt.",

@@ -190,6 +190,12 @@ class BootRepairFlow:
         if any(finding.category == DiagnosticCategory.BTRFS_LAYOUT_ERROR for finding in evidence.diagnostic_findings):
             warnings.append('btrfs subvolume layout was detected; verify subvolume mount options in /etc/fstab')
 
+        if selection.dual_boot_windows:
+            if not evidence.windows_present:
+                warnings.append('dual boot with Windows selected but no Windows evidence was detected')
+            else:
+                warnings.append('Windows evidence detected; preserving shared EFI and Windows boot entries')
+
         context = RepairContext(
             disks=evidence.disks,
             partitions=evidence.partitions,
@@ -198,10 +204,12 @@ class BootRepairFlow:
             distribution=evidence.distribution,
             distribution_family=evidence.distribution_family,
             initramfs_tool=evidence.initramfs_tool,
+            windows_present=evidence.windows_present,
             evidence=evidence.blkid_entries + evidence.fstab_entries + evidence.notes,
             root_partition=root_partition,
             root_disk_name=root_disk_name,
             efi_system_partition=efi_system_partition,
+            dual_boot_windows=selection.dual_boot_windows,
             operation_mode=selection.operation_mode,
             confirmed=selection.confirmed and not issues,
             diagnostic_findings=evidence.diagnostic_findings,

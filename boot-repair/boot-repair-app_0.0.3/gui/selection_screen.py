@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Callable, Sequence
 
 import customtkinter as ctk
 import tkinter as tk
@@ -21,6 +21,7 @@ class SelectionScreen(BaseScreen):
         on_continue: Callback | None = None,
         on_root_selected: SelectionCallback | None = None,
         on_efi_selected: SelectionCallback | None = None,
+        on_dual_boot_selected: Callable[[bool], None] | None = None,
     ) -> None:
         super().__init__(
             master,
@@ -32,6 +33,7 @@ class SelectionScreen(BaseScreen):
         )
         self._on_root_selected = on_root_selected
         self._on_efi_selected = on_efi_selected
+        self._on_dual_boot_selected = on_dual_boot_selected
 
         summary_frame = ctk.CTkFrame(self.content, fg_color='transparent')
         summary_frame.grid(row=0, column=0, sticky='ew', pady=(10, 20))
@@ -76,12 +78,21 @@ class SelectionScreen(BaseScreen):
         )
         self.efi_combo.grid(row=1, column=1, sticky='ew', pady=4, padx=(0, 20))
 
+        self.dual_boot_var = ctk.BooleanVar(value=False)
+        self.dual_boot_checkbox = ctk.CTkCheckBox(
+            selector_frame,
+            text=self.translator.translate('selection.dual_boot_label'),
+            variable=self.dual_boot_var,
+            command=self._dispatch_dual_boot_selected,
+        )
+        self.dual_boot_checkbox.grid(row=2, column=0, columnspan=2, sticky='w', padx=(0, 8), pady=4)
+
         self.mode_label = ctk.CTkLabel(
             selector_frame,
             text=self.translator.translate('selection.mode_label'),
             font=ctk.CTkFont(weight='bold'),
         )
-        self.mode_label.grid(row=2, column=0, sticky='w', padx=(0, 8), pady=4)
+        self.mode_label.grid(row=3, column=0, sticky='w', padx=(0, 8), pady=4)
 
         self.mode_var = ctk.StringVar(value='safe')
         self.mode_selector = ctk.CTkSegmentedButton(
@@ -90,7 +101,7 @@ class SelectionScreen(BaseScreen):
             variable=self.mode_var,
             command=self._dispatch_mode_selected,
         )
-        self.mode_selector.grid(row=2, column=1, sticky='ew', pady=4, padx=(0, 20))
+        self.mode_selector.grid(row=3, column=1, sticky='ew', pady=4, padx=(0, 20))
 
         lists_frame = ctk.CTkFrame(self.content, fg_color='transparent')
         lists_frame.grid(row=2, column=0, sticky='ew', pady=(10, 20))
@@ -155,8 +166,15 @@ class SelectionScreen(BaseScreen):
     def _dispatch_mode_selected(self, value: str) -> None:
         self.mode_var.set(value)
 
+    def _dispatch_dual_boot_selected(self) -> None:
+        if self._on_dual_boot_selected is not None:
+            self._on_dual_boot_selected(self.dual_boot_var.get())
+
     def selected_mode(self) -> str:
         return self.mode_var.get()
+
+    def selected_dual_boot(self) -> bool:
+        return bool(self.dual_boot_var.get())
 
     def set_catalog(self, *, disks: Sequence[Disk], partitions: Sequence[Partition]) -> None:
         partition_disk_map = {partition.name: partition.disk_name for partition in partitions}
@@ -191,9 +209,10 @@ class SelectionScreen(BaseScreen):
 
         self.set_status(self.translator.translate('selection.status_loaded'))
 
-    def set_selection(self, root_partition: str, efi_partition: str) -> None:
+    def set_selection(self, root_partition: str, efi_partition: str, dual_boot_windows: bool = False) -> None:
         self.root_var.set(root_partition)
         self.efi_var.set(efi_partition)
+        self.dual_boot_var.set(dual_boot_windows)
 
     def selected_disk_for_root(self) -> str:
         return self._partition_disk_map.get(self.root_var.get(), '')
@@ -202,6 +221,7 @@ class SelectionScreen(BaseScreen):
         super().update_translations()
         self.root_label.configure(text=self.translator.translate('selection.root_label'))
         self.efi_label.configure(text=self.translator.translate('selection.efi_label'))
+        self.dual_boot_checkbox.configure(text=self.translator.translate('selection.dual_boot_label'))
         self.mode_label.configure(text=self.translator.translate('selection.mode_label'))
         self.disks_heading_label.configure(text=self.translator.translate('selection.disks_heading'))
         self.partitions_heading_label.configure(text=self.translator.translate('selection.partitions_heading'))

@@ -21,6 +21,7 @@ logger = get_logger(__name__)
 class AppState:
     root_partition: str = ''
     efi_partition: str = ''
+    dual_boot_windows: bool = False
     operation_mode: OperationMode = OperationMode.SAFE
 
 
@@ -70,6 +71,7 @@ class BootRepairApp:
             on_execution_abort=self._abort_execution,
             on_root_selected=self._select_root_partition,
             on_efi_selected=self._select_efi_partition,
+            on_dual_boot_selected=self._toggle_dual_boot,
         )
 
         logger.info('[STARTUP 11] Grid-placing screens')
@@ -256,7 +258,7 @@ class BootRepairApp:
 
     def _select_root_partition(self, value: str) -> None:
         self.state.root_partition = value.strip()
-        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition)
+        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition, self.state.dual_boot_windows)
         disk = self.screens.selection.selected_disk_for_root()
         if disk:
             self.screens.selection.set_status(
@@ -265,7 +267,11 @@ class BootRepairApp:
 
     def _select_efi_partition(self, value: str) -> None:
         self.state.efi_partition = value.strip()
-        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition)
+        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition, self.state.dual_boot_windows)
+
+    def _toggle_dual_boot(self, value: bool) -> None:
+        self.state.dual_boot_windows = bool(value)
+        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition, self.state.dual_boot_windows)
 
     def _run_analysis(self) -> None:
         if not self.state.root_partition:
@@ -314,6 +320,7 @@ class BootRepairApp:
             root_partition=self.state.root_partition,
             efi_system_partition=self.state.efi_partition,
             firmware_mode=self.evidence.firmware_mode,
+            dual_boot_windows=self.state.dual_boot_windows,
             operation_mode=OperationMode(self.screens.selection.selected_mode()),
             confirmed=True,
             notes=('selected from GUI',),
@@ -426,7 +433,7 @@ class BootRepairApp:
 
         self.screens.analysis.set_evidence(lines)
         self.screens.selection.set_catalog(disks=evidence.disks, partitions=evidence.partitions)
-        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition)
+        self.screens.selection.set_selection(self.state.root_partition, self.state.efi_partition, self.state.dual_boot_windows)
         self.screens.analysis.set_status(self.translator.translate('analysis.completed'))
 
     def _render_plan(self, plan: RepairPlan) -> None:
