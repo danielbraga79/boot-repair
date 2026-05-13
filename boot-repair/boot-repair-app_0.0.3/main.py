@@ -6,9 +6,10 @@ import os
 import sys
 
 from core.analysis import collect_evidence
+from core.logger import setup_logger, get_logger
 from core.models import OperationMode, format_size_bytes
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _format_evidence(evidence) -> list[str]:
@@ -88,15 +89,17 @@ def run_gui(mode: OperationMode = OperationMode.SAFE) -> int:
 
 
 def main() -> int:
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    parser = argparse.ArgumentParser(description='Boot Repair Assistant')
+    parser.add_argument('--cli', action='store_true', help='Run in command-line mode instead of using the GUI')
+    parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+    args = parser.parse_args()
+    
+    setup_logger(debug=args.debug)
     logger.info('[STARTUP 1] Entering main')
     logger.info('[STARTUP 2] Initializing logging and validating launcher environment')
     _validate_launcher_environment()
 
-    logger.info('[STARTUP 3] Parsing command-line arguments')
-    parser = argparse.ArgumentParser(description='Boot Repair Assistant')
-    parser.add_argument('--cli', action='store_true', help='Run in command-line mode instead of using the GUI')
-    args = parser.parse_args()
+    logger.info('[STARTUP 3] Parsing command-line arguments completed')
 
     backend = _detect_graphics_backend()
     logger.info(f"Target mode: {'CLI' if args.cli else 'GUI'} ({backend})")

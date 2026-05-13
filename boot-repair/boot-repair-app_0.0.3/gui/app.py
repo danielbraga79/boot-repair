@@ -9,11 +9,12 @@ import customtkinter as ctk
 from core.analysis import AnalysisEvidence, collect_optional_diagnostics
 from core.execution import ExecutionReport
 from core.flow import BootRepairFlow, FlowStage, RepairSelection
+from core.logger import get_logger
 from core.models import OperationMode, RepairAction, RepairPlan, format_size_bytes
 from gui.screens import PlanViewModel, build_screens
 from i18n import TranslationManager
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass(slots=True)

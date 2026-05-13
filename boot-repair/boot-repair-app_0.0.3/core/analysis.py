@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Any
 import logging
 
-logger = logging.getLogger(__name__)
+from core.logger import get_logger
+
+logger = get_logger(__name__)
 
 from .analysis.evidence_builder import collect_evidence
 

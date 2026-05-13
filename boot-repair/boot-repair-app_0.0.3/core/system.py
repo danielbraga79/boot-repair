@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 import os
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Mapping, Sequence
 
 from core.models import DistributionFamily
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,6 +182,10 @@ def run(
     check: bool = True,
 ) -> CommandResult:
     argv = _normalize_command(command)
+    cmd_str = ' '.join(str(c) for c in argv)
+    logger.debug(f'Executing command: {cmd_str}')
+    
+    start_time = time.time()
     try:
         completed = subprocess.run(
             argv,
@@ -190,11 +198,23 @@ def run(
             check=False,
         )
     except subprocess.TimeoutExpired as exc:
+        logger.error(f'Command timed out after {timeout}s: {cmd_str}')
         raise CommandTimeoutError(argv, timeout) from exc
     except FileNotFoundError as exc:
+        logger.error(f'Command not found: {cmd_str}')
         raise CommandNotFoundError(argv) from exc
 
+    duration = time.time() - start_time
     result = CommandResult(argv, completed.returncode, completed.stdout, completed.stderr)
+    
+    if result.returncode != 0:
+        logger.warning(f'Command failed (exit code {result.returncode}): {cmd_str} (duration: {duration:.2f}s)')
+        if completed.stderr:
+            stderr_preview = completed.stderr[:200] + '...' if len(completed.stderr) > 200 else completed.stderr
+            logger.debug(f'stderr: {stderr_preview}')
+    else:
+        logger.debug(f'Command completed successfully: {cmd_str} (duration: {duration:.2f}s)')
+    
     if check and result.returncode != 0:
         raise CommandError(result)
     return result
